@@ -77,7 +77,7 @@ pip install -r requirements.txt
 ```bash
 make train                 # trains with the notebook's default RF hyperparameters
 make train-tuned           # RandomizedSearchCV like the notebook, registers the model
-make mlflow-ui             # http://localhost:5000 to browse runs/metrics/artifacts
+make mlflow-ui            # http://localhost:5000 to browse runs/metrics/artifacts
 ```
 
 Each run logs params, `r2_test`/`r2_train`/`mae_test`/`rmse_test`, the
@@ -102,7 +102,28 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -
 Endpoints: `POST /predict`, `POST /predict/batch`, `GET /health`,
 `GET /metrics` (Prometheus), `GET /monitoring/drift`.
 
-### 3. Docker
+### 3. Streamlit UI
+
+​```bash
+pip install -r requirements-ui.txt   # streamlit + plotly, kept out of the serving image
+make ui                              # streamlit run streamlit_app.py
+​```
+
+`streamlit_app.py` calls straight into `src.inference` / `src.schema` /
+`src.monitoring` — the same code path the API and SageMaker use — so no
+separate server needs to be running. It has three tabs:
+
+- **Predict** — sliders/selects for every feature, an animated gauge that
+  sweeps up to the predicted score, and color-coded feedback.
+- **Session history** — a running chart + table of every prediction made
+  in the current browser session.
+- **Live monitoring** — the same PSI/z-score drift report as
+  `GET /monitoring/drift`, rendered as status badges per feature.
+
+Each prediction made in the UI is logged through `src.monitoring`, so it
+counts toward drift calculations exactly like a real API call.
+
+### 4. Docker
 
 ```bash
 make docker-build
@@ -117,14 +138,14 @@ daemon available here), but it follows the standard `python:3.11-slim`
 + pinned-requirements + non-root-user pattern and installs cleanly from
 the pinned `requirements-serve.txt`.
 
-### 4. Tests
+### 5. Tests
 
 ```bash
 make test                  # 11 tests: schema validation, inference, all API routes, drift
 make lint                  # ruff
 ```
 
-### 5. Deploy to AWS SageMaker
+### 6. Deploy to AWS SageMaker
 
 Requires AWS credentials with SageMaker/S3/IAM access and a SageMaker
 execution role ARN.
@@ -149,7 +170,7 @@ Tear it down when you're done (endpoints bill per instance-hour):
 python sagemaker/teardown.py --endpoint-name mental-health-score-endpoint
 ```
 
-### 6. CI/CD
+### 7. CI/CD
 
 `.github/workflows/ci-cd.yml`:
 - **Every PR & push:** install deps → `ruff check` → `pytest`.
@@ -201,3 +222,5 @@ rule.
 - `sagemaker/deploy.py` uses `ml.m5.large` / hourly monitoring as
   reasonable defaults — resize the instance type and monitoring cadence
   to your actual traffic and budget.
+
+

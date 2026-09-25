@@ -1,0 +1,4 @@
+# UI-only dependencies — not needed by the FastAPI/Docker/SageMaker serving
+# paths, so kept out of requirements-serve.txt to avoid bloating that image.
+streamlit==1.40.2
+plotly==5.24.1

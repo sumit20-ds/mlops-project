@@ -22,7 +22,7 @@ from src.schema import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("mental_health_api")
 
-MODEL_VERSION = "rf-v1"  # bump / wire to MLflow run id or SageMaker model package ARN in CI
+MODEL_VERSION = "rf-v1"  #wire to MLflow run id or SageMaker model package ARN in CI
 
 REQUEST_COUNT = Counter("predict_requests_total", "Total prediction requests", ["status"])
 REQUEST_LATENCY = Histogram("predict_latency_seconds", "Prediction latency in seconds")
@@ -34,8 +34,6 @@ PREDICTION_VALUE = Histogram(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Fail fast at startup if the model can't be loaded (bad version pin,
-    # missing artifact, corrupted file) instead of failing on first request.
     try:
         load_model()
         logger.info("Model loaded successfully at startup.")
@@ -45,7 +43,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(
+app = FastAPI(  #runingby mlflow model
     title="Mental Health Score API",
     description="Predicts a student's mental health score from lifestyle & social-media usage features.",
     version=MODEL_VERSION,

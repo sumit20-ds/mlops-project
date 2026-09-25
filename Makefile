@@ -1,7 +1,13 @@
-.PHONY: install train serve test lint docker-build docker-run mlflow-ui drift baseline
+.PHONY: install install-ui train serve ui test lint docker-build docker-run mlflow-ui drift baseline
 
 install:
 	pip install -r requirements.txt
+
+install-ui:
+	pip install -r requirements-ui.txt
+
+ui:
+	streamlit run streamlit_app.py
 
 train:
 	python -m src.train
