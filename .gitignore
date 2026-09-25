@@ -9,3 +9,5 @@ monitoring/prediction_log.jsonl
 *.egg-info/
 .DS_Store
 sagemaker/model.tar.gz
+*.csv
+*.pkl
