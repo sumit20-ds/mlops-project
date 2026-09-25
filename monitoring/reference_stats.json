@@ -1,0 +1,102 @@
+{
+  "numeric": {
+    "Study_Hours": {
+      "mean": 3.008403361344538,
+      "std": 1.6368313724785042,
+      "min": 0.3,
+      "max": 8.3,
+      "p25": 1.5,
+      "p50": 2.8,
+      "p75": 4.2
+    },
+    "Age": {
+      "mean": 20.822128851540615,
+      "std": 1.736774118994225,
+      "min": 18.0,
+      "max": 24.0,
+      "p25": 19.0,
+      "p50": 21.0,
+      "p75": 22.0
+    },
+    "Avg_Daily_Usage_Hours": {
+      "mean": 5.078491396558623,
+      "std": 1.65409709126714,
+      "min": 1.0,
+      "max": 8.8,
+      "p25": 3.8,
+      "p50": 5.0,
+      "p75": 6.3
+    },
+    "Daily_Unlocks": {
+      "mean": 171.45558223289316,
+      "std": 42.85982859036206,
+      "min": 62.0,
+      "max": 273.0,
+      "p25": 140.0,
+      "p50": 171.0,
+      "p75": 204.0
+    },
+    "Physical_Activity_Hours": {
+      "mean": 1.7511604641856742,
+      "std": 0.6672816592333362,
+      "min": 0.0,
+      "max": 4.1,
+      "p25": 1.3,
+      "p50": 1.7,
+      "p75": 2.2
+    },
+    "Sleep_Hours_Per_Night": {
+      "mean": 6.634653861544618,
+      "std": 1.2215608526742194,
+      "min": 3.6,
+      "max": 9.9,
+      "p25": 5.6,
+      "p50": 6.6,
+      "p75": 7.5
+    }
+  },
+  "categorical": {
+    "Stress_Level": {
+      "Very High": 0.3243,
+      "High": 0.2879,
+      "Medium": 0.2591,
+      "Low": 0.1287
+    },
+    "Gender": {
+      "Male": 0.527,
+      "Female": 0.473
+    },
+    "Academic_Level": {
+      "Undergraduate": 0.7263,
+      "Graduate": 0.1837,
+      "High School": 0.09
+    },
+    "Most_Used_Platform": {
+      "Instagram": 0.2261,
+      "TikTok": 0.1837,
+      "Facebook": 0.1439,
+      "LinkedIn": 0.1044,
+      "YouTube": 0.0982,
+      "Twitter": 0.0924,
+      "Snapchat": 0.0838,
+      "WhatsApp": 0.035,
+      "LINE": 0.01,
+      "VKontakte": 0.008,
+      "KakaoTalk": 0.0072,
+      "WeChat": 0.0072
+    },
+    "Purpose_Of_Use": {
+      "Entertainment": 0.5104,
+      "Education": 0.2187,
+      "Networking": 0.1587,
+      "News": 0.1122
+    }
+  },
+  "target": {
+    "mean": 6.2311524609843945,
+    "std": 1.2784758944667614,
+    "min": 3.6,
+    "max": 9.4
+  },
+  "n_reference_rows": 4998
+}

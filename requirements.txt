@@ -1,0 +1,31 @@
+# --- Serving ---
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.4
+prometheus-client==0.21.1
+
+# --- ML / model ---
+# PINNED: the shipped Mental_Health_Model.pkl was trained with
+# scikit-learn==1.6.1. Loading it with a different version can raise
+# AttributeError / UnpicklingError (confirmed failure on 1.8.0 — internal
+# classes such as ColumnTransformer's `_RemainderColsList` changed).
+# If you retrain, you may bump this — but re-export the .pkl from the same
+# environment you deploy with, and update this pin together.
+scikit-learn==1.6.1
+pandas==2.2.3
+numpy==1.26.4
+joblib==1.4.2
+
+# --- Experiment tracking ---
+mlflow==2.19.0
+
+# --- AWS / SageMaker deployment ---
+boto3==1.35.90
+sagemaker==2.237.1
+
+# --- Testing ---
+pytest==8.3.4
+httpx==0.28.1
+
+# --- Lint (CI) ---
+ruff==0.8.4

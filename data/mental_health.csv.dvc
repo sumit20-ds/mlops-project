@@ -1,0 +1,5 @@
+outs:
+- md5: 258bfab1ef916f65c5a493e14ce95a67
+  size: 398996
+  hash: md5
+  path: mental_health.csv

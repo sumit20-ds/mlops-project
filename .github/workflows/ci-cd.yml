@@ -1,0 +1,153 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: mental-health-score-api
+  SAGEMAKER_ENDPOINT_NAME: mental-health-score-endpoint
+
+jobs:
+  # ------------------------------------------------------------------
+  # Runs on every PR and every push — lint + unit/API tests.
+  # ------------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check src app tests sagemaker
+
+      - name: Run tests
+        run: pytest tests/ -v --junitxml=test-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+
+  # ------------------------------------------------------------------
+  # Build & push the serving image. Runs on every PR too (build-only,
+  # catches Dockerfile breakage early) but only pushes on main.
+  # ------------------------------------------------------------------
+  build-image:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag
+        id: meta
+        run: echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        if: github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build image
+        run: docker build -t ${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }} .
+
+      - name: Smoke-test the image
+        run: |
+          docker run -d --name smoke -p 8000:8000 ${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:8000/health; then echo "healthy"; break; fi
+            echo "waiting for container..."; sleep 2
+          done
+          curl -sf http://localhost:8000/health || (docker logs smoke && exit 1)
+          docker rm -f smoke
+
+      - name: Tag & push to ECR
+        if: github.event_name == 'push'
+        run: |
+          REGISTRY=${{ steps.ecr-login.outputs.registry }}
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }} \
+            "$REGISTRY/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}"
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }} \
+            "$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
+          docker push "$REGISTRY/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}"
+          docker push "$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
+
+  # ------------------------------------------------------------------
+  # Deploy/update the SageMaker endpoint. Only on push to main, and
+  # only after the image has built cleanly.
+  # ------------------------------------------------------------------
+  deploy-sagemaker:
+    if: github.event_name == 'push'
+    needs: build-image
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deploy dependencies
+        run: pip install boto3==1.35.90 sagemaker==2.237.1 scikit-learn==1.6.1 pandas==2.2.3 numpy==1.26.4 joblib==1.4.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy / update SageMaker endpoint
+        run: |
+          python sagemaker/deploy.py \
+            --role-arn ${{ secrets.SAGEMAKER_EXECUTION_ROLE_ARN }} \
+            --bucket ${{ secrets.MODEL_ARTIFACT_BUCKET }} \
+            --endpoint-name ${{ env.SAGEMAKER_ENDPOINT_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Post-deploy smoke test
+        run: |
+          python - <<'PY'
+          import boto3, json
+          rt = boto3.client("sagemaker-runtime", region_name="${{ env.AWS_REGION }}")
+          payload = {
+              "Study_Hours": 4.5, "Age": 21, "Avg_Daily_Usage_Hours": 4.0, "Daily_Unlocks": 134,
+              "Physical_Activity_Hours": 2.2, "Sleep_Hours_Per_Night": 6.7, "Stress_Level": "Medium",
+              "Gender": "Male", "Academic_Level": "Undergraduate", "Most_Used_Platform": "Facebook",
+              "Purpose_Of_Use": "Networking", "Country": "India",
+          }
+          resp = rt.invoke_endpoint(
+              EndpointName="${{ env.SAGEMAKER_ENDPOINT_NAME }}",
+              ContentType="application/json",
+              Body=json.dumps(payload),
+          )
+          print(resp["Body"].read().decode())
+          PY
+
+# --------------------------------------------------------------------------
+# Required repository secrets:
+#   AWS_DEPLOY_ROLE_ARN          - OIDC-assumable role for GH Actions (ECR + SageMaker + S3)
+#   SAGEMAKER_EXECUTION_ROLE_ARN - role SageMaker itself assumes to run the endpoint
+#   MODEL_ARTIFACT_BUCKET        - S3 bucket for model.tar.gz + data capture
+# --------------------------------------------------------------------------

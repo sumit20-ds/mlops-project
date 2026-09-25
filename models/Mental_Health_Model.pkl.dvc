@@ -1,0 +1,5 @@
+outs:
+- md5: 37e0cb476c11070c58ecf89e68e2e00c
+  size: 25694755
+  hash: md5
+  path: Mental_Health_Model.pkl

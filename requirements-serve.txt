@@ -1,0 +1,13 @@
+# Minimal runtime deps for the FastAPI container — keep this list small,
+# it directly determines image size and attack surface.
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.4
+prometheus-client==0.21.1
+
+# PINNED — see requirements.txt for why. Do not bump without re-exporting
+# the model artifact.
+scikit-learn==1.6.1
+pandas==2.2.3
+numpy==1.26.4
+joblib==1.4.2
